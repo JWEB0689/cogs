@@ -251,6 +251,10 @@ impl DetectionScope {
     }
 }
 
+fn checks_breathing_during_calibration(scope: DetectionScope) -> bool {
+    scope == DetectionScope::Presence
+}
+
 #[allow(clippy::too_many_arguments)]
 fn detection_report(
     scope: DetectionScope,
@@ -414,13 +418,15 @@ fn main() {
         // silently destroys later detection — bench-verified 2026-06-15, where the
         // still-person ratio collapsed from ~6x to ~2x until the baseline was
         // re-taken clean. Warn loudly so the operator re-calibrates.
-        for (nid, frames) in &per {
-            if let Some(m) = base.nodes.get(nid) {
-                let series: Vec<f64> = frames.iter().map(|f| residual_energy(f, m)).collect();
-                let fs = frames.len() as f64 / secs.max(1) as f64;
-                if let Some((bpm, snr)) = breathing_band(&series, fs) {
-                    if snr >= breath_snr && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&bpm) {
-                        eprintln!("[presence-field] ⚠ node{nid}: empty baseline shows a respiration band ({bpm:.0} bpm, snr {snr:.1}) — the room may NOT have been empty. RE-CALIBRATE with the room truly clear or detection will be degraded.");
+        if checks_breathing_during_calibration(scope) {
+            for (nid, frames) in &per {
+                if let Some(m) = base.nodes.get(nid) {
+                    let series: Vec<f64> = frames.iter().map(|f| residual_energy(f, m)).collect();
+                    let fs = frames.len() as f64 / secs.max(1) as f64;
+                    if let Some((bpm, snr)) = breathing_band(&series, fs) {
+                        if snr >= breath_snr && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&bpm) {
+                            eprintln!("[presence-field] ⚠ node{nid}: empty baseline shows a respiration band ({bpm:.0} bpm, snr {snr:.1}) — the room may NOT have been empty. RE-CALIBRATE with the room truly clear or detection will be degraded.");
+                        }
                     }
                 }
             }
@@ -709,6 +715,12 @@ mod tests {
         assert!(report.get("breathing_bpm").is_none());
         assert!(report.get("breathing_snr").is_none());
         assert!(report.get("breathing_advisory").is_none());
+    }
+
+    #[test]
+    fn occupancy_calibration_does_not_run_breathing_analysis() {
+        assert!(!checks_breathing_during_calibration(DetectionScope::Occupancy));
+        assert!(checks_breathing_during_calibration(DetectionScope::Presence));
     }
 
     #[test]
