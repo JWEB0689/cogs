@@ -31,7 +31,7 @@ anyhow = "1.0"
 
 # Cryptography
 argon2 = { version = "0.5", features = ["std"] }
-ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand = "0.8"
 getrandom = "0.2"
 sha2 = "0.10"
@@ -60,14 +60,14 @@ axum = "0.7"
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
 hyper = { version = "1.0", features = ["full"] }
-http = "1.0"
+http = "1.1"
 
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Redis for distributed storage and rate limiting
-redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "aio"] }
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager", "aio"] }
 
 [dev-dependencies]
 # Testing
